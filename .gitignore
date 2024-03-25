@@ -1,0 +1,4 @@
+.DS_Store
+.vscode/
+Products.db
+clothing_spider/product.json
