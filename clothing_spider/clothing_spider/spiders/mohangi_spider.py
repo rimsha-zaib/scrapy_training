@@ -1,3 +1,26 @@
+"""
+Spider for scraping product information from Mohagni website.
+
+This spider navigates through the Mohagni website to extract details of various products
+including their title, category, URL, images, description, and variants.
+
+Attributes:
+    name (str): The name of the spider.
+    start_urls (list): List of URLs to start crawling from.
+    product_pattern : Regular expression pattern to extract product data from JavaScript.
+    des_pattern : Regular expression pattern to clean JSON data for description.
+    stitched_pattern (re.Pattern): Regular expression pattern to identify stitched product variants.
+
+Methods:
+    parse(self, response): Parses the initial response and initiates category parsing.
+    parse_category(self, response): Extracts category title and pagination links for each category and initiates  parse_products.
+    extract_pagination_links(self, response) : Extracts pagination links from the response and appends '?page=1' to ensure all pages are included. 
+    parse_products(self, response): Parses product pages and initiates product detail parsing for each product url.
+    parse_product_detail(self, response): Parses product detail pages and extracts relevant information.
+    get_varients(self, response): Extracts product variants based on stitching and stitching type.
+
+"""
+
 import json
 import re
 
@@ -23,10 +46,15 @@ class MohangiSpider(scrapy.Spider):
     
     def parse_category(self, response):
         category = response.css("h2.collection-hero__title::text")[1].get()
-        next_page_links = set(response.css("ul.pagination__list a::attr(href)").getall())
-        next_page_links.add(response.url + '?page=1')
-        for link in next_page_links:
+        pagination_links = self.extract_pagination_links(response)
+        for link in pagination_links:
             yield response.follow(link, callback=self.parse_products, meta = {"category": category})
+
+    def extract_pagination_links(self, response):
+        # Extract pagination links from response
+        pagination_links = set(response.css("ul.pagination__list a::attr(href)").getall())
+        pagination_links.add(response.url + '?page=1')
+        return pagination_links
 
     def parse_products(self, response):
         products = response.css("li.grid__item")
@@ -71,11 +99,12 @@ class MohangiSpider(scrapy.Spider):
         stitched_products = []
         for variant in variants:
             title = variant.get('title', '')
+            # Ensures that "unstitched" variants are not added twice to the list of stitched products.
             if self.stitched_pattern.search(title):
                 stitched_product = TypeOfProduct()
                 stitched_product["type"] = title
                 stitched_product["sale_price"] = variant.get('price') / 100  
-                stitched_product["regular_price"] = variant.get('compare_at_price', variant.get('price')) / 100
+                stitched_product["regular_price"] = (variant["compare_at_price"] or variant["price"]) / 100
                 stitched_product["availability"] = self.get_availability(variant.get("available"))
                 stitched_products.append(stitched_product)
         return stitched_products
@@ -90,7 +119,7 @@ class MohangiSpider(scrapy.Spider):
             unstitched_product = TypeOfProduct()
             unstitched_product["type"] = "UNSTITCHED"
             unstitched_product["sale_price"] = json_data["price"] / 100
-            unstitched_product["regular_price"] = json_data["compare_at_price"] / 100
+            unstitched_product["regular_price"] = (json_data["compare_at_price"] or json_data["price"]) / 100
             unstitched_product["availability"] = self.get_availability(json_data['available'])
             unstitched_products.append(unstitched_product)
         return unstitched_products

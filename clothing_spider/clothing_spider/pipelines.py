@@ -27,7 +27,6 @@ class SqlitePipeline:
 
         ## Create cursor, used to execute commands
         self.cur = self.con.cursor()
-        self.cur.execute("DROP TABLE IF EXISTS Products")
         ## Create quotes table if none exists
         self.cur.execute("""
             CREATE TABLE IF NOT EXISTS Products (
