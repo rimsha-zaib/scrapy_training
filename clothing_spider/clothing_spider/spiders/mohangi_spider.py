@@ -26,6 +26,7 @@ import re
 
 import scrapy
 from scrapy import Request
+from w3lib.url import add_or_replace_parameter
 
 from ..items import ProductItem, SizeItem
 
@@ -54,7 +55,7 @@ class MohangiSpider(scrapy.Spider):
     def extract_pagination_links(self, response):
         # Extract pagination links from response
         pagination_links = set(response.css("ul.pagination__list a::attr(href)").getall())
-        pagination_links.add(response.url + '?page=1')
+        pagination_links.add(add_or_replace_parameter(response.url, 'page', '1'))
         return pagination_links
 
     def parse_products(self, response):
