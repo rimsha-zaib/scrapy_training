@@ -26,12 +26,11 @@ class MarcjacobsSpiderSpider(scrapy.Spider):
     start_urls = ["https://marcjacobs.com/"]
     countries_info = [
         # ('country', 'currency', 'language', 'home_url')
-        ('uk', 'PS', 'enn', 'https://marcjacobs.com/')
+        ('uk', 'GBP', 'enn', 'https://marcjacobs.com/')
     ]
     custom_settings = {
         'DOWNLOAD_DELAY': 2,
         'ROBOTSTXT_OBEY' : False
-
     }
 
     def start_requests(self):
